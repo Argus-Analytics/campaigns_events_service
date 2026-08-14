@@ -14,8 +14,15 @@ dependencies = [
 
 [tool.uv]
 package = false
-dev-dependencies = ["ruff>=0.6.9"]
+dev-dependencies = ["ruff>=0.6.9", "pytest>=8.3.0", "pytest-asyncio>=0.24.0"]
 
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+
+[tool.pytest.ini_options]
+# Mismo patrón que core_sms/billing_service: pythonpath reproduce el
+# PYTHONPATH=/app/src del Dockerfile sin instalar el paquete.
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"

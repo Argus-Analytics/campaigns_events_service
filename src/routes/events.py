@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from config.providers import PROVIDERS
 from config.settings import settings
 from kafka.producer import publish
 from kafka.topics import topic_for_provider
@@ -33,19 +34,28 @@ class IngestCampaignRequest(BaseModel):
     campaign_id: str
     client_name: str
     pulpey_integration: bool = False
+    # Opt-out de los proveedores que vienen activados por default (hoy:
+    # tigo_gt, claro_gt — ver config/providers.py::PROVIDERS). Pulpey no entra
+    # acá porque ya es opt-in vía `pulpey_integration`; no tiene sentido un
+    # opt-out de algo que por default está apagado.
+    disabled_providers: list[Provider] = Field(default_factory=list)
     subcampaigns: list[SubCampaignIngest]
 
 
 def _providers_for(payload: IngestCampaignRequest) -> list[Provider]:
     """Asunción de negocio sin confirmar todavía: toda subcampaña se manda a
-    AMBAS operadoras (Tigo + Claro cubren juntas la base de suscriptores de
-    Guatemala), y a Pulpey solo si `pulpey_integration` está activo. El día
+    las operadoras activadas por default (Tigo + Claro cubren juntas la base
+    de suscriptores de Guatemala) salvo que el cliente las haya desactivado
+    puntualmente, y a Pulpey solo si `pulpey_integration` está activo. El día
     que haya segmentación real por operadora (ver
     core_sms/src/services/reach_provider.py sobre por qué el alcance hoy no
     se calcula por operadora), esta lista debería volverse dinámica por
     subcampaña en vez de fija por campaña."""
-    providers: list[Provider] = ["tigo_gt", "claro_gt"]
-    if payload.pulpey_integration:
+    providers = [
+        p for p, info in PROVIDERS.items()
+        if info["default_enabled"] and p not in payload.disabled_providers
+    ]
+    if payload.pulpey_integration and "pulpey" not in payload.disabled_providers:
         providers.append("pulpey")
     return providers
 
