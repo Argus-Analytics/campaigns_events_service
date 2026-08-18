@@ -25,7 +25,7 @@ services:
       retries: 10
       start_period: 20s
 
-  # Job de un solo uso: crea los 4 topics de forma explícita (evita depender
+  # Job de un solo uso: crea los topics de forma explícita (evita depender
   # de auto.create.topics, que crea con defaults poco predecibles).
   kafka-init:
     image: apache/kafka:3.7.0
@@ -38,6 +38,14 @@ services:
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.pulpey --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.gt --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.gt --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.hn --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.hn --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.sv --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.sv --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.ni --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.ni --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.cr --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.cr --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.delivery-status --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.dead-letter --partitions 1 --replication-factor 1
 
@@ -112,6 +120,150 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       PROVIDER: claro_gt
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-tigo-hn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-tigo-hn
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: tigo_hn
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-claro-hn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-claro-hn
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: claro_hn
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-tigo-sv:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-tigo-sv
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: tigo_sv
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-claro-sv:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-claro-sv
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: claro_sv
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-tigo-ni:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-tigo-ni
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: tigo_ni
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-claro-ni:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-claro-ni
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: claro_ni
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-tigo-cr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-tigo-cr
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: tigo_cr
+    volumes:
+      - ./src:/app/src
+    command: ["uv", "run", "python", "-m", "workers.provider_worker"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  worker-claro-cr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campaigns-worker-claro-cr
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROVIDER: claro_cr
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]

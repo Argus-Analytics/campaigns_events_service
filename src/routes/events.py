@@ -33,27 +33,35 @@ class SubCampaignIngest(BaseModel):
 class IngestCampaignRequest(BaseModel):
     campaign_id: str
     client_name: str
+    # ISO-2 (ej. "gt") — determina qué proveedores país-específicos reciben
+    # esta campaña (ver _providers_for). "gt" por default: mismo país que
+    # existía antes de que core_sms empezara a mandar este campo.
+    country: str = "gt"
     pulpey_integration: bool = False
-    # Opt-out de los proveedores que vienen activados por default (hoy:
-    # tigo_gt, claro_gt — ver config/providers.py::PROVIDERS). Pulpey no entra
-    # acá porque ya es opt-in vía `pulpey_integration`; no tiene sentido un
-    # opt-out de algo que por default está apagado.
+    # Opt-out de los proveedores que vienen activados por default para el
+    # país de esta campaña (ver config/providers.py::PROVIDERS). Pulpey no
+    # entra acá porque ya es opt-in vía `pulpey_integration`; no tiene
+    # sentido un opt-out de algo que por default está apagado.
     disabled_providers: list[Provider] = Field(default_factory=list)
     subcampaigns: list[SubCampaignIngest]
 
 
 def _providers_for(payload: IngestCampaignRequest) -> list[Provider]:
     """Asunción de negocio sin confirmar todavía: toda subcampaña se manda a
-    las operadoras activadas por default (Tigo + Claro cubren juntas la base
-    de suscriptores de Guatemala) salvo que el cliente las haya desactivado
-    puntualmente, y a Pulpey solo si `pulpey_integration` está activo. El día
-    que haya segmentación real por operadora (ver
-    core_sms/src/services/reach_provider.py sobre por qué el alcance hoy no
-    se calcula por operadora), esta lista debería volverse dinámica por
-    subcampaña en vez de fija por campaña."""
+    las operadoras activadas por default DEL PAÍS de la campaña (Tigo + Claro
+    cubren juntas la base de suscriptores de cada país — ver
+    config/providers.py::PROVIDERS) salvo que el cliente las haya desactivado
+    puntualmente, y a Pulpey (país-agnóstico) solo si `pulpey_integration`
+    está activo. Filtrar por país es necesario ahora que hay proveedores de
+    varios países en la tabla — sin esto, una campaña de Honduras también se
+    mandaría a tigo_gt/claro_gt. El día que haya segmentación real por
+    operadora (ver core_sms/src/services/reach_provider.py sobre por qué el
+    alcance hoy no se calcula por operadora), esta lista debería volverse
+    dinámica por subcampaña en vez de fija por campaña."""
+    country = payload.country.strip().lower()
     providers = [
         p for p, info in PROVIDERS.items()
-        if info["default_enabled"] and p not in payload.disabled_providers
+        if info["default_enabled"] and info["country"] == country and p not in payload.disabled_providers
     ]
     if payload.pulpey_integration and "pulpey" not in payload.disabled_providers:
         providers.append("pulpey")

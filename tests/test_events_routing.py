@@ -1,0 +1,41 @@
+"""routes/events.py::_providers_for — con proveedores de varios países en la
+tabla (ver config/providers.py::PROVIDERS), el filtro por país es lo que
+evita que una campaña de un país se mande también a los proveedores de otro."""
+
+from __future__ import annotations
+
+from routes.events import IngestCampaignRequest, _providers_for
+
+
+def _payload(**overrides) -> IngestCampaignRequest:
+    base = dict(campaign_id="camp-1", client_name="Cliente demo", subcampaigns=[])
+    base.update(overrides)
+    return IngestCampaignRequest(**base)
+
+
+def test_providers_for_scopes_to_campaign_country():
+    assert set(_providers_for(_payload(country="hn"))) == {"tigo_hn", "claro_hn"}
+
+
+def test_providers_for_does_not_leak_other_countries_providers():
+    providers = _providers_for(_payload(country="gt"))
+    assert "tigo_hn" not in providers
+    assert "claro_hn" not in providers
+
+
+def test_providers_for_defaults_to_gt_when_country_omitted():
+    assert set(_providers_for(_payload())) == {"tigo_gt", "claro_gt"}
+
+
+def test_providers_for_respects_disabled_providers():
+    providers = _providers_for(_payload(country="sv", disabled_providers=["claro_sv"]))
+    assert providers == ["tigo_sv"]
+
+
+def test_providers_for_adds_pulpey_when_opted_in_regardless_of_country():
+    providers = _providers_for(_payload(country="cr", pulpey_integration=True))
+    assert set(providers) == {"tigo_cr", "claro_cr", "pulpey"}
+
+
+def test_providers_for_country_is_case_insensitive():
+    assert set(_providers_for(_payload(country="HN"))) == {"tigo_hn", "claro_hn"}

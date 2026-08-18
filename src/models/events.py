@@ -8,7 +8,17 @@ from pydantic import BaseModel, Field
 # "pulpey" no está confirmado como integración real todavía (ver
 # adapters/pulpey_adapter.py) — vive en el mismo Literal que tigo_gt/claro_gt
 # porque comparte el mismo pipeline de eventos, no porque ya tenga API real.
-Provider = Literal["pulpey", "tigo_gt", "claro_gt"]
+# Los proveedores de HN/SV/NI/CR tampoco tienen integración real todavía (ver
+# adapters/stub_adapter.py) — mismo caso que tigo_gt/claro_gt cuando se
+# agregaron, listos para conectar la API real cuando haya contrato/acceso.
+Provider = Literal[
+    "pulpey",
+    "tigo_gt", "claro_gt",
+    "tigo_hn", "claro_hn",
+    "tigo_sv", "claro_sv",
+    "tigo_ni", "claro_ni",
+    "tigo_cr", "claro_cr",
+]
 DeliveryStatus = Literal["sent", "pending_integration", "failed"]
 
 

@@ -4,6 +4,7 @@ import asyncio
 import os
 
 from adapters import claro_gt_adapter, pulpey_adapter, tigo_gt_adapter
+from adapters.stub_adapter import make_stub_adapter
 from kafka.consumer_base import run_consumer_loop
 from kafka.producer import publish, start_producer, stop_producer
 from kafka.topics import TOPIC_DELIVERY_STATUS, topic_for_provider
@@ -13,6 +14,16 @@ _ADAPTERS = {
     "pulpey": pulpey_adapter.send,
     "tigo_gt": tigo_gt_adapter.send,
     "claro_gt": claro_gt_adapter.send,
+    # Sin integración real todavía (ver adapters/stub_adapter.py) — mismo
+    # estado que tenían tigo_gt/claro_gt antes de tener API/contrato.
+    "tigo_hn": make_stub_adapter("Tigo Honduras"),
+    "claro_hn": make_stub_adapter("Claro Honduras"),
+    "tigo_sv": make_stub_adapter("Tigo El Salvador"),
+    "claro_sv": make_stub_adapter("Claro El Salvador"),
+    "tigo_ni": make_stub_adapter("Tigo Nicaragua"),
+    "claro_ni": make_stub_adapter("Claro Nicaragua"),
+    "tigo_cr": make_stub_adapter("Tigo Costa Rica"),
+    "claro_cr": make_stub_adapter("Claro Costa Rica"),
 }
 
 

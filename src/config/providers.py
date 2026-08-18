@@ -8,6 +8,10 @@ ProviderMode = Literal["api", "manual"]
 
 
 class ProviderInfo(TypedDict):
+    # ISO-2 en minúscula del país al que sirve este proveedor, o None para
+    # uno país-agnóstico (hoy solo pulpey). Ver routes/events.py::_providers_for
+    # — sin esto, una campaña de Honduras también se mandaría a tigo_gt/claro_gt.
+    country: str | None
     mode: ProviderMode
     # Días hábiles que el proveedor necesita entre que se le entrega la
     # campaña y el envío efectivo. Rango porque en el caso manual varía según
@@ -27,22 +31,15 @@ class ProviderInfo(TypedDict):
 # (ver ese archivo). Si se agrega/cambia un proveedor acá, hay que
 # actualizarlo ahí también.
 PROVIDERS: dict[Provider, ProviderInfo] = {
-    "claro_gt": {
-        "mode": "manual",
-        "lead_business_days_min": 10,
-        "lead_business_days_max": 20,
-        "default_enabled": True,
-    },
-    "tigo_gt": {
-        "mode": "api",
-        "lead_business_days_min": 0,
-        "lead_business_days_max": 1,
-        "default_enabled": True,
-    },
-    "pulpey": {
-        "mode": "api",
-        "lead_business_days_min": 0,
-        "lead_business_days_max": 1,
-        "default_enabled": False,
-    },
+    "claro_gt": {"country": "gt", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
+    "tigo_gt":  {"country": "gt", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
+    "claro_hn": {"country": "hn", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
+    "tigo_hn":  {"country": "hn", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
+    "claro_sv": {"country": "sv", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
+    "tigo_sv":  {"country": "sv", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
+    "claro_ni": {"country": "ni", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
+    "tigo_ni":  {"country": "ni", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
+    "claro_cr": {"country": "cr", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
+    "tigo_cr":  {"country": "cr", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
+    "pulpey":   {"country": None, "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": False},
 }
