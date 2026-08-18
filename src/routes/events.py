@@ -57,11 +57,15 @@ def _providers_for(payload: IngestCampaignRequest) -> list[Provider]:
     mandaría a tigo_gt/claro_gt. El día que haya segmentación real por
     operadora (ver core_sms/src/services/reach_provider.py sobre por qué el
     alcance hoy no se calcula por operadora), esta lista debería volverse
-    dinámica por subcampaña en vez de fija por campaña."""
+    dinámica por subcampaña en vez de fija por campaña.
+
+    Excluye siempre los proveedores con `available=False` (ver
+    config/providers.py::ProviderInfo) — no tienen ninguna vía real de envío
+    todavía, sin importar si el cliente los dejó "activados"."""
     country = payload.country.strip().lower()
     providers = [
         p for p, info in PROVIDERS.items()
-        if info["default_enabled"] and info["country"] == country and p not in payload.disabled_providers
+        if info["default_enabled"] and info["available"] and info["country"] == country and p not in payload.disabled_providers
     ]
     if payload.pulpey_integration and "pulpey" not in payload.disabled_providers:
         providers.append("pulpey")

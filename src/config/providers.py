@@ -23,6 +23,12 @@ class ProviderInfo(TypedDict):
     # especifica nada. Hoy: Tigo/Claro sí, Pulpey no (opt-in vía
     # Campaign.pulpey_integration, ver core_sms/src/models/campaign.py).
     default_enabled: bool
+    # Si el proveedor puede enviar SMS en absoluto en su país — ver
+    # core_sms/src/services/provider_registry.py::ProviderInfo.available
+    # (misma definición). Hoy: Tigo Costa Rica no tiene ninguna vía de envío
+    # todavía, ni siquiera manual — routes/events.py::_providers_for lo
+    # excluye siempre, sin importar disabled_providers.
+    available: bool
 
 
 # Fuente de verdad de a qué se compromete cada proveedor — core_sms mantiene
@@ -31,15 +37,15 @@ class ProviderInfo(TypedDict):
 # (ver ese archivo). Si se agrega/cambia un proveedor acá, hay que
 # actualizarlo ahí también.
 PROVIDERS: dict[Provider, ProviderInfo] = {
-    "claro_gt": {"country": "gt", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
-    "tigo_gt":  {"country": "gt", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
-    "claro_hn": {"country": "hn", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
-    "tigo_hn":  {"country": "hn", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
-    "claro_sv": {"country": "sv", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
-    "tigo_sv":  {"country": "sv", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
-    "claro_ni": {"country": "ni", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
-    "tigo_ni":  {"country": "ni", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
-    "claro_cr": {"country": "cr", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True},
-    "tigo_cr":  {"country": "cr", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True},
-    "pulpey":   {"country": None, "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": False},
+    "claro_gt": {"country": "gt", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
+    "tigo_gt":  {"country": "gt", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
+    "claro_hn": {"country": "hn", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
+    "tigo_hn":  {"country": "hn", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
+    "claro_sv": {"country": "sv", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
+    "tigo_sv":  {"country": "sv", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
+    "claro_ni": {"country": "ni", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
+    "tigo_ni":  {"country": "ni", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
+    "claro_cr": {"country": "cr", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
+    "tigo_cr":  {"country": "cr", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": False},
+    "pulpey":   {"country": None, "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": False, "available": True},
 }

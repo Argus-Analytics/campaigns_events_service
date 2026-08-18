@@ -33,9 +33,15 @@ def test_providers_for_respects_disabled_providers():
 
 
 def test_providers_for_adds_pulpey_when_opted_in_regardless_of_country():
-    providers = _providers_for(_payload(country="cr", pulpey_integration=True))
-    assert set(providers) == {"tigo_cr", "claro_cr", "pulpey"}
+    providers = _providers_for(_payload(country="sv", pulpey_integration=True))
+    assert set(providers) == {"tigo_sv", "claro_sv", "pulpey"}
 
 
 def test_providers_for_country_is_case_insensitive():
     assert set(_providers_for(_payload(country="HN"))) == {"tigo_hn", "claro_hn"}
+
+
+def test_providers_for_excludes_unavailable_provider_even_if_not_disabled():
+    """Tigo Costa Rica no tiene ninguna vía de envío todavía — nunca debería
+    aparecer, ni siquiera "activado" por default."""
+    assert _providers_for(_payload(country="cr")) == ["claro_cr"]
