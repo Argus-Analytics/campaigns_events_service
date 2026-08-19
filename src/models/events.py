@@ -19,7 +19,7 @@ Provider = Literal[
     "tigo_ni", "claro_ni",
     "tigo_cr", "claro_cr",
 ]
-DeliveryStatus = Literal["sent", "pending_integration", "failed"]
+DeliveryStatus = Literal["sent", "delivered", "pending_integration", "failed"]
 
 
 class MessageEvent(BaseModel):
@@ -53,5 +53,12 @@ class DeliveryResult(BaseModel):
     subcampaign_key: str
     provider: Provider
     status: DeliveryStatus
+    # Cuántos SMS confirmó este evento como entregados — solo > 0 cuando
+    # status="delivered" (billing_service cobra créditos reales sobre esto,
+    # nunca sobre "sent"/pending_integration — ver core_sms/src/routes/
+    # delivery_status.py). Simulado hoy con estimated_reach mientras los
+    # adapters sean stubs (ver adapters/*.py); reemplazar por el conteo real
+    # que devuelva cada proveedor el día que haya integración.
+    delivered_count: int = 0
     detail: str = ""
     processed_at: datetime
