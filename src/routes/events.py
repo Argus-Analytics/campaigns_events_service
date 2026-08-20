@@ -10,6 +10,7 @@ from config.settings import settings
 from kafka.producer import publish
 from kafka.topics import topic_for_provider
 from models.events import CampaignEvent, MessageEvent, Provider
+from rate_limit import limiter
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -73,6 +74,7 @@ def _providers_for(payload: IngestCampaignRequest) -> list[Provider]:
 
 
 @router.post("/campaigns", dependencies=[Depends(_require_internal_key)])
+@limiter.exempt  # server-a-servidor (core_sms), no un navegador
 async def ingest_campaign(payload: IngestCampaignRequest) -> dict:
     providers = _providers_for(payload)
     published = 0
