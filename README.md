@@ -1,15 +1,15 @@
 # campaigns_events_service
 
 Servicio que recibe campañas (vía HTTP, desde `core_sms`) y las publica como
-eventos en Kafka, uno por proveedor de envío. Todo lo relacionado con Kafka
-(broker, producer, consumers) vive acá — `core_sms` nunca importa un cliente
-Kafka, solo hace HTTP hacia este servicio y expone un endpoint HTTP para
-recibir el resultado de vuelta.
+eventos en Redpanda, uno por proveedor de envío. Todo lo relacionado con el
+broker (producer, consumers) vive acá — `core_sms` nunca importa un cliente
+Kafka/Redpanda, solo hace HTTP hacia este servicio y expone un endpoint HTTP
+para recibir el resultado de vuelta.
 
 ```
-core_sms --HTTP--> [ingestion-api] --Kafka--> [worker-tigo-gt]    --Kafka--> [worker-delivery-status] --HTTP--> core_sms
-                                          \--> [worker-claro-gt]  --/
-                                          \--> [worker-pulpey]    --/
+core_sms --HTTP--> [ingestion-api] --Redpanda--> [worker-tigo-gt]    --Redpanda--> [worker-delivery-status] --HTTP--> core_sms
+                                             \--> [worker-claro-gt]  --/
+                                             \--> [worker-pulpey]    --/
 ```
 
 ## Topics
@@ -53,8 +53,8 @@ docker compose up -d --build
 ```
 
 - Ingestion API: `http://localhost:8302` (`GET /health`)
-- Kafka UI: `http://localhost:8090`
-- Kafka broker (para debug con clientes externos): `localhost:9092`
+- Redpanda Console: `http://localhost:8090`
+- Broker Redpanda (para debug con clientes externos, protocolo Kafka): `localhost:19092`
 
 `INTERNAL_API_KEY` acá debe ser igual a `EVENTS_SERVICE_INTERNAL_API_KEY` en
 el `.env` de `core_sms`. `CORE_SMS_INTERNAL_API_KEY` acá debe ser igual a
@@ -76,10 +76,14 @@ en el ecosistema.
   adapter de proveedor procesa un evento. El resultado se guarda en
   `Campaign.delivery_status`, keyed por `"{subcampaign_key}:{provider}"`.
 
-## Por qué Apache Kafka real (no Redpanda)
+## Por qué Redpanda (y no Apache Kafka)
 
-Se eligió Kafka real en modo KRaft (sin Zookeeper) en vez de Redpanda u otro
-broker liviano — decisión explícita para tener exactamente el mismo binario
-que se usaría en un cluster compartido de infraestructura, si llega a
-existir uno. El trade-off es una imagen más pesada de levantar en dev
-(mitigado acá corriendo un solo nodo combinado broker+controller).
+Se migró de Apache Kafka real (modo KRaft) a Redpanda en un solo nodo
+(`--mode dev-container`) porque el resto de la infraestructura ya corre
+Redpanda — la decisión previa de "usar el mismo binario que un cluster
+compartido" ya no aplica porque ese cluster compartido es Redpanda, no Kafka.
+Como Redpanda habla el protocolo Kafka, `aiokafka` (producer.py,
+consumer_base.py) no cambió nada de código; el único delta es
+infraestructura: `docker-compose.yml` (imagen, healthcheck, creación de
+topics con `rpk` en vez de `kafka-topics.sh`) y Redpanda Console en vez de
+`kafka-ui` para inspección visual.

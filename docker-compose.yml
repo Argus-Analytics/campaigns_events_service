@@ -1,65 +1,64 @@
 services:
-  # Kafka real en modo KRaft combinado (broker+controller, sin Zookeeper) —
-  # un solo nodo alcanza para dev/arranque con 3 topics de proveedor + 1 de
-  # delivery-status.
-  kafka:
-    image: apache/kafka:3.7.0
-    container_name: campaigns-kafka
+  # Redpanda de un solo nodo (dev-container) — reemplaza Apache Kafka porque
+  # el resto de la infra ya corre Redpanda. Habla el protocolo Kafka, así que
+  # aiokafka (producer.py/consumer_base.py) no necesita ningún cambio de código.
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.18
+    container_name: campaigns-redpanda
     restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --mode dev-container
+      - --smp 1
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
     ports:
       - "9092:9092"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      CLUSTER_ID: campaigns_events_cluster
+      - "19092:19092"
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
       interval: 10s
       timeout: 10s
       retries: 10
       start_period: 20s
 
   # Job de un solo uso: crea los topics de forma explícita (evita depender
-  # de auto.create.topics, que crea con defaults poco predecibles).
-  kafka-init:
-    image: apache/kafka:3.7.0
+  # de auto-creación con defaults poco predecibles). `|| true` por topic para
+  # que sea idempotente en reruns de `docker compose up` (rpk falla si el
+  # topic ya existe, a diferencia de --if-not-exists de kafka-topics.sh).
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.18
     depends_on:
-      kafka:
+      redpanda:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.pulpey --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.gt --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.gt --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.hn --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.hn --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.sv --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.sv --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.ni --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.ni --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.tigo.cr --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.claro.cr --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.delivery-status --partitions 3 --replication-factor 1
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic campaigns.dead-letter --partitions 1 --replication-factor 1
+        rpk topic create campaigns.pulpey --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.tigo.gt --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.claro.gt --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.tigo.hn --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.claro.hn --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.tigo.sv --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.claro.sv --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.tigo.ni --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.claro.ni --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.tigo.cr --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.claro.cr --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.delivery-status --partitions 3 --replicas 1 -X brokers=redpanda:9092 || true
+        rpk topic create campaigns.dead-letter --partitions 1 --replicas 1 -X brokers=redpanda:9092 || true
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: campaigns-kafka-ui
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.7.2
+    container_name: campaigns-redpanda-console
     restart: unless-stopped
     ports:
       - "8090:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: campaigns
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_BROKERS: redpanda:9092
     depends_on:
-      kafka:
+      redpanda:
         condition: service_healthy
 
   # Único punto de entrada HTTP: core_sms le pega a esto para publicar
@@ -73,7 +72,7 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     volumes:
       - ./src:/app/src
     command:
@@ -82,7 +81,7 @@ services:
     ports:
       - "8302:8302"
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8302/health"]
@@ -100,13 +99,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: tigo_gt
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-claro-gt:
@@ -118,13 +117,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: claro_gt
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-tigo-hn:
@@ -136,13 +135,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: tigo_hn
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-claro-hn:
@@ -154,13 +153,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: claro_hn
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-tigo-sv:
@@ -172,13 +171,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: tigo_sv
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-claro-sv:
@@ -190,13 +189,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: claro_sv
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-tigo-ni:
@@ -208,13 +207,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: tigo_ni
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-claro-ni:
@@ -226,13 +225,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: claro_ni
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-tigo-cr:
@@ -244,13 +243,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: tigo_cr
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-claro-cr:
@@ -262,13 +261,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: claro_cr
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   worker-pulpey:
@@ -280,13 +279,13 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       PROVIDER: pulpey
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.provider_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
 
   # Consume campaigns.delivery-status y reporta el resultado a core_sms por
@@ -301,10 +300,10 @@ services:
     env_file:
       - .env
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     volumes:
       - ./src:/app/src
     command: ["uv", "run", "python", "-m", "workers.delivery_status_worker"]
     depends_on:
-      kafka-init:
+      redpanda-init:
         condition: service_completed_successfully
