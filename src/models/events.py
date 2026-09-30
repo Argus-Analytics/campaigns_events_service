@@ -39,6 +39,10 @@ class CampaignEvent(BaseModel):
     subcampaign_key: str
     mensajes: list[MessageEvent] = Field(default_factory=list)
     estimated_reach: int = 0
+    # Base que la telco debe usar (prearmada / a medida / nueva) — ver
+    # core_sms/src/services/bases.py::telco_base_payload. Si tipo='nueva', la
+    # telco crea la base a nivel país y envía en `areas_geograficas`.
+    base: dict | None = None
     areas_geograficas: list[dict] = Field(default_factory=list)
     idempotency_key: str
 

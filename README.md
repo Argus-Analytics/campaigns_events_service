@@ -54,7 +54,7 @@ docker compose up -d --build
 
 - Ingestion API: `http://localhost:8302` (`GET /health`)
 - Redpanda Console: `http://localhost:8090`
-- Broker Redpanda (para debug con clientes externos, protocolo Kafka): `localhost:19092`
+- Broker Redpanda (para debug con clientes externos, protocolo Kafka): `localhost:19093`
 
 `INTERNAL_API_KEY` acá debe ser igual a `EVENTS_SERVICE_INTERNAL_API_KEY` en
 el `.env` de `core_sms`. `CORE_SMS_INTERNAL_API_KEY` acá debe ser igual a

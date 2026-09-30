@@ -36,16 +36,20 @@ class ProviderInfo(TypedDict):
 # depender de una llamada de red en el camino crítico de activar una campaña
 # (ver ese archivo). Si se agrega/cambia un proveedor acá, hay que
 # actualizarlo ahí también.
+# Tigo y Claro son ambos manuales y comparten las mismas bases (ver
+# core_sms/src/services/bases.py): el plazo real de un segmento lo define su
+# base (lista 1-2 días hábiles, a medida ~10), no el proveedor. Estos valores
+# son el de una base lista.
 PROVIDERS: dict[Provider, ProviderInfo] = {
-    "claro_gt": {"country": "gt", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
-    "tigo_gt":  {"country": "gt", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
-    "claro_hn": {"country": "hn", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
-    "tigo_hn":  {"country": "hn", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
-    "claro_sv": {"country": "sv", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
-    "tigo_sv":  {"country": "sv", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
-    "claro_ni": {"country": "ni", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
-    "tigo_ni":  {"country": "ni", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": True},
-    "claro_cr": {"country": "cr", "mode": "manual", "lead_business_days_min": 10, "lead_business_days_max": 20, "default_enabled": True, "available": True},
-    "tigo_cr":  {"country": "cr", "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": True, "available": False},
+    "claro_gt": {"country": "gt", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "tigo_gt":  {"country": "gt", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "claro_hn": {"country": "hn", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "tigo_hn":  {"country": "hn", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "claro_sv": {"country": "sv", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "tigo_sv":  {"country": "sv", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "claro_ni": {"country": "ni", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "tigo_ni":  {"country": "ni", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "claro_cr": {"country": "cr", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": True},
+    "tigo_cr":  {"country": "cr", "mode": "manual", "lead_business_days_min": 1,  "lead_business_days_max": 2,  "default_enabled": True, "available": False},
     "pulpey":   {"country": None, "mode": "api",    "lead_business_days_min": 0,  "lead_business_days_max": 1,  "default_enabled": False, "available": True},
 }

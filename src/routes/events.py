@@ -28,6 +28,7 @@ class SubCampaignIngest(BaseModel):
     key: str
     mensajes: list[MessageEvent] = Field(default_factory=list)
     estimated_reach: int = 0
+    base: dict | None = None
     areas_geograficas: list[dict] = Field(default_factory=list)
 
 
@@ -88,6 +89,7 @@ async def ingest_campaign(payload: IngestCampaignRequest) -> dict:
                 subcampaign_key=sub.key,
                 mensajes=sub.mensajes,
                 estimated_reach=sub.estimated_reach,
+                base=sub.base,
                 areas_geograficas=sub.areas_geograficas,
                 idempotency_key=f"{payload.campaign_id}:{sub.key}:{provider}",
             )

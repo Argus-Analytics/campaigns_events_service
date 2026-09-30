@@ -45,3 +45,23 @@ def test_providers_for_excludes_unavailable_provider_even_if_not_disabled():
     """Tigo Costa Rica no tiene ninguna vía de envío todavía — nunca debería
     aparecer, ni siquiera "activado" por default."""
     assert _providers_for(_payload(country="cr")) == ["claro_cr"]
+
+
+async def test_ingest_forwards_the_base_of_each_subcampaign_to_every_provider(monkeypatch):
+    """La base (prearmada / a medida / nueva) viaja en cada evento — sin esto
+    la telco recibiría el mensaje sin saber a qué segmento va dirigido."""
+    from routes import events
+
+    published: list[dict] = []
+
+    async def _publish(topic, key, value):
+        published.append(value)
+
+    monkeypatch.setattr(events, "publish", _publish)
+    base = {"tipo": "nueva", "key": "custom-abc", "demografia": {"genero": "ambos"}}
+    payload = _payload(subcampaigns=[{"key": "s1", "base": base}])
+
+    await events.ingest_campaign(payload)
+
+    assert len(published) == 2  # tigo_gt + claro_gt
+    assert all(e["base"] == base for e in published)
