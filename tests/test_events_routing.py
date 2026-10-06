@@ -65,3 +65,28 @@ async def test_ingest_forwards_the_base_of_each_subcampaign_to_every_provider(mo
 
     assert len(published) == 2  # tigo_gt + claro_gt
     assert all(e["base"] == base for e in published)
+
+
+async def test_ingest_uses_each_providers_own_reach(monkeypatch):
+    """Tigo y Claro tienen alcances distintos para la misma base: cada evento
+    lleva el de su telco (y cae a estimated_reach si falta)."""
+    from routes import events
+
+    published: list[dict] = []
+
+    async def _publish(topic, key, value):
+        published.append(value)
+
+    monkeypatch.setattr(events, "publish", _publish)
+    payload = _payload(subcampaigns=[
+        {"key": "s1", "estimated_reach": 7, "estimated_reach_by_provider": {"tigo_gt": 1200, "claro_gt": 3400}},
+        {"key": "s2", "estimated_reach": 7, "estimated_reach_by_provider": {"tigo_gt": 50}},
+    ])
+
+    await events.ingest_campaign(payload)
+
+    reach = {(e["subcampaign_key"], e["provider"]): e["estimated_reach"] for e in published}
+    assert reach == {
+        ("s1", "tigo_gt"): 1200, ("s1", "claro_gt"): 3400,
+        ("s2", "tigo_gt"): 50, ("s2", "claro_gt"): 7,
+    }

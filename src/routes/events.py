@@ -28,6 +28,10 @@ class SubCampaignIngest(BaseModel):
     key: str
     mensajes: list[MessageEvent] = Field(default_factory=list)
     estimated_reach: int = 0
+    # Alcance de la base en cada telco (Tigo y Claro difieren) — ver
+    # core_sms/src/services/reach_provider.py. Cada evento usa el de su
+    # proveedor; si falta, cae a `estimated_reach`.
+    estimated_reach_by_provider: dict[str, int] = Field(default_factory=dict)
     base: dict | None = None
     areas_geograficas: list[dict] = Field(default_factory=list)
 
@@ -88,7 +92,7 @@ async def ingest_campaign(payload: IngestCampaignRequest) -> dict:
                 provider=provider,
                 subcampaign_key=sub.key,
                 mensajes=sub.mensajes,
-                estimated_reach=sub.estimated_reach,
+                estimated_reach=sub.estimated_reach_by_provider.get(provider, sub.estimated_reach),
                 base=sub.base,
                 areas_geograficas=sub.areas_geograficas,
                 idempotency_key=f"{payload.campaign_id}:{sub.key}:{provider}",
